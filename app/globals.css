@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-yellow-bg: #FFD84D;
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background-color: var(--color-yellow-bg);
+  color: #1a1a1a;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
