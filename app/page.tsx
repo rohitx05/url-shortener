@@ -2,31 +2,44 @@
 
 import { useState } from "react";
 
-/**
- * Placeholder function for URL shortening.
- * Replace this with an actual API call to your backend.
- *
- * Example integration:
- *   const res = await fetch("/api/shorten", {
- *     method: "POST",
- *     headers: { "Content-Type": "application/json" },
- *     body: JSON.stringify({ url }),
- *   });
- *   const data = await res.json();
- *   return data.shortUrl;
- */
-async function shortenUrl(url: string): Promise<string> {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
+interface UrlStats {
+  shortCode: string;
+  originalUrl: string;
+  clicks: number;
+  createdAt: string;
+}
 
-  // Return a fake shortened URL for now
-  const id = Math.random().toString(36).substring(2, 8);
-  return `https://short.url/${id}`;
+async function shortenUrl(url: string): Promise<{ shortUrl: string; shortCode: string }> {
+  const res = await fetch("/api/shorten", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to shorten URL.");
+  }
+
+  return { shortUrl: data.shortUrl, shortCode: data.shortCode };
+}
+
+async function fetchStats(shortCode: string): Promise<UrlStats> {
+  const res = await fetch(`/api/stats/${shortCode}`);
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to fetch stats.");
+  }
+
+  return data;
 }
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
+  const [stats, setStats] = useState<UrlStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -35,6 +48,7 @@ export default function Home() {
     e.preventDefault();
     setError("");
     setShortUrl("");
+    setStats(null);
     setCopied(false);
 
     if (!url.trim()) {
@@ -53,9 +67,12 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual backend call
       const result = await shortenUrl(url);
-      setShortUrl(result);
+      setShortUrl(result.shortUrl);
+
+      // Automatically fetch stats after shortening
+      const urlStats = await fetchStats(result.shortCode);
+      setStats(urlStats);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -74,11 +91,11 @@ export default function Home() {
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-[600px] bg-white rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 sm:p-10">
+    <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-[520px] bg-white rounded-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-8 sm:p-10">
         <h1 className="text-xl font-semibold text-[#1a1a1a]">URL Shortener</h1>
         <p className="mt-1 text-sm text-[#666]">
-          Paste a long URL and get a shorter one.
+          Paste a URL below to create a shorter link.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6">
@@ -86,7 +103,7 @@ export default function Home() {
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com/your-very-long-url"
+            placeholder="Paste your long URL here..."
             className="w-full px-4 py-3 text-sm border border-[#ddd] rounded-[10px] outline-none focus:border-[#999] placeholder:text-[#aaa]"
           />
 
@@ -109,7 +126,7 @@ export default function Home() {
               href={shortUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-[#1a1a1a] font-medium truncate hover:underline"
+              className="text-sm font-mono text-[#1a1a1a] font-medium truncate hover:underline"
             >
               {shortUrl}
             </a>
@@ -121,7 +138,34 @@ export default function Home() {
             </button>
           </div>
         )}
+
+        {stats && (
+          <div className="mt-4 pt-4 border-t border-[#eee] space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-[#999]">Original</span>
+              <span className="text-[#1a1a1a] truncate ml-4 max-w-[300px] text-right" title={stats.originalUrl}>
+                {stats.originalUrl}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[#999]">Clicks</span>
+              <span className="text-[#1a1a1a] font-mono">{stats.clicks}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[#999]">Created</span>
+              <span className="text-[#1a1a1a]">
+                {new Date(stats.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+
+      <p className="mt-6 text-xs text-[#999] text-center">Fast. Simple. Free.</p>
     </main>
   );
 }
