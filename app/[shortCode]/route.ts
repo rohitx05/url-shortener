@@ -55,7 +55,7 @@ export async function GET(
       where: { shortCode },
       data: { clicks: { increment: 1 } },
     })
-    .catch((err) => {
+    .catch((err: unknown) => {
       console.error("Failed to increment click count:", err);
     });
 
