@@ -147,10 +147,7 @@ export default function Home() {
                 {stats.originalUrl}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#999]">Clicks</span>
-              <span className="text-[#1a1a1a] font-mono">{stats.clicks}</span>
-            </div>
+
             <div className="flex justify-between text-sm">
               <span className="text-[#999]">Created</span>
               <span className="text-[#1a1a1a]">
