@@ -60,5 +60,9 @@ export async function GET(
     });
 
   // 4. Redirect to the original URL
+  if (!originalUrl) {
+    return NextResponse.redirect(new URL("/not-found", _request.url), 307);
+  }
+
   return NextResponse.redirect(originalUrl, 308);
 }
